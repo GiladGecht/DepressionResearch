@@ -53,9 +53,6 @@ def TitleClassifier(io_df):
 
     return svc, count_vect
 
-
-
-
 def CleanData(dataset):
     dataset['post_text'] = dataset['post_text'].fillna('')
     dataset = dataset[dataset['post_text'] != '[removed]']
@@ -67,13 +64,11 @@ def CleanData(dataset):
 
     return dataset
 
-
-
-
 def GetRegularExpressions(io_FullDF):
     # Find by using regular expressions all the sentences
     # which are built in the following way: "i ...... anxi/ety/ous/olytic and so on"
-    keywordToFilterBy = input("Enter keyword to run regular expressions on")
+    keywordToFilterBy = input("Enter keyword to run regular expressions on\n")
+    myRegEx = r'\bi\s.*\b' + keywordToFilterBy + r'[\w]*\b'
     count = 0
     sentences = []
     post = []
@@ -81,15 +76,14 @@ def GetRegularExpressions(io_FullDF):
     for row in io_FullDF.iterrows():
 
         sentence = row[1]['post_text']
-        sentenceContainingRegEx = re.findall(r'\bi\s.*\b' + keywordToFilterBy + r'[\w]*\b', sentence)
-        if len(sentenceContainingRegEx) > 0:
+        sentencesContainingRegEx = re.findall(myRegEx, sentence)
+        if len(sentencesContainingRegEx) > 0:
             post.append(row[1]['submission_id'])
             subreddits.append(row[1]['subreddit'])
             sentences.append(sentence)
             count += 1
-    print(count)
+    print("Amount of posts containing the regular expression: ", count)
     return post
-
 
 def GetDepressionGroupUsersNeutralPosts(i_RegularExpressionsPosts, io_FullDF):
 
@@ -120,7 +114,7 @@ def GetDepressionGroupUsersNeutralPosts(i_RegularExpressionsPosts, io_FullDF):
     # Create a dataset comprised of all the other users who weren't classified as depressed by our regular expression
     # next, we only want those who we classified by our original classifier, who were predicted as neutral => predicted = 0
     non_depressed_people = io_FullDF.drop(depression_group_users_indices, axis=0).copy()
-    non_depressed_people = non_depressed_people[non_depressed_people['predicted'] == 0]
+    non_depressed_people = non_depressed_people[non_depressed_people['predicted'] == 1]
     non_depressed_people = non_depressed_people[non_depressed_people['num_words_post'] > 50]
 
     depression_group_users_neutral_posts = depression_group_users_neutral_posts.reset_index().drop('index', axis=1)
@@ -138,3 +132,73 @@ def GetDepressionGroupUsersNeutralPosts(i_RegularExpressionsPosts, io_FullDF):
     print("Number of Unique neutral posts users", len(list(set(non_depressed_people['user_name']))))
 
     return depression_group_users_neutral_posts
+
+def ConvertInputToListOfStrings(io_Subreddits):
+    io_Subreddits = io_Subreddits.replace("'", "")
+    io_Subreddits = io_Subreddits.split(',')
+    return  io_Subreddits
+
+def GetNeutralAndDepressionSubreddits(io_Whole_data, i_Subreddits):
+    neutralSubreddits = []
+    depression_subreddits = []
+    for i in i_Subreddits:
+        values = io_Whole_data[io_Whole_data['subreddit'] == i]['predicted'].value_counts().values
+        sum_values = np.sum(io_Whole_data[io_Whole_data['subreddit'] == i]['predicted'].value_counts().values)
+        values_perc = values / sum_values
+        # value1 = io_Whole_data[io_Whole_data['subreddit'] == i]['predicted'].value_counts().values[0]
+        if io_Whole_data[io_Whole_data['subreddit'] == i]['predicted'].value_counts().keys()[0] == 1:
+            if values_perc[0] >= 0.7:
+                neutralSubreddits.append(i)
+        else:
+            if values_perc[0] >= 0.7:
+                depression_subreddits.append(i)
+
+    print("Distribution of depression subreddits\n")
+    print(io_Whole_data[io_Whole_data['subreddit'].isin(depression_subreddits)]['subreddit'].value_counts())
+
+    print("Distribution of neutral subreddits\n")
+    print(io_Whole_data[io_Whole_data['subreddit'].isin(neutralSubreddits)]['subreddit'].value_counts())
+    return neutralSubreddits, depression_subreddits
+
+def GetNeutralDepressionUsers(io_WholeData, i_AnxietySubreddits, i_NeutralSubreddits):
+    # Split the dataframe to neutral and depressed by the filtered subreddits
+    depression_df = io_WholeData[io_WholeData['subreddit'].isin(i_AnxietySubreddits)]
+    neutral_df = io_WholeData[io_WholeData['subreddit'].isin(i_NeutralSubreddits)]
+
+    print("Anxiety group size:\n\n", depression_df.shape)
+    print(20 * "-")
+    print("neutral group size:\n\n", neutral_df.shape)
+
+    # Get the list of all unique users for each type of dataset
+    depression_names = list(set(depression_df['user_name']))
+    neutral_names = list(set(neutral_df['user_name']))
+
+    # Merge them back to a single dataframe
+    full_df = pd.concat([depression_df, neutral_df], axis=0)
+    full_df.shape
+
+    # Filter out people who havn't posted in both types of subreddits (Depression/Neutral) in the current dataset
+    both = []
+    for i in depression_names:
+        if i in neutral_names:
+            both.append(i)
+    print("Amount of unique users who are in both groups: ", len(both))
+
+    anxietyGroupSize = 0
+    neutralGroupSize = 0
+    for user in depression_names:
+        anxietyGroupSize += io_WholeData[io_WholeData['user_name'] == user].shape[0]
+
+    for user in neutral_names:
+        neutralGroupSize += io_WholeData[io_WholeData['user_name'] == user].shape[0]
+
+    print("Posts taken from anxious users: ", anxietyGroupSize)
+    print(20 * "-")
+    print("Posts taken from neutral users: ", neutralGroupSize)
+
+    full_df = full_df[full_df['user_name'].isin(both)]
+    full_df = full_df.sort_values(by=['user_name', 'date_created'], ascending=False)
+    full_df['num_distinct_words'] = full_df['post_text'].apply(lambda x: len(set(x.split())))
+
+    return full_df
+
