@@ -17,6 +17,7 @@ import pandas as pd
 import seaborn as sb
 import matplotlib.pyplot as plt
 
+
 from time import time
 from sklearn.feature_extraction.text import CountVectorizer,TfidfTransformer
 from urllib3.exceptions import HTTPError
@@ -27,8 +28,9 @@ from elasticsearch import Elasticsearch
 
 # Load The Data
 def loadData():
-    submissionDF = pd.read_csv(r'/home/ohad/PycharmProjects/DepressionResearch/Create_Data/SubmissionsDF2.csv')
+    submissionDF = pd.read_csv(r'/home/ohad/PycharmProjects/DepressionResearch/Create_Data/SubmissionsDF.csv')
     return submissionDF
+
 
 # Connect to reddit's API using Praw
 def connectToAPI():
@@ -50,12 +52,18 @@ def getNewSubreddit(redditInstance, limit):
     return new_subreddit
 
 
-# Iterate through the already asigned user names in the DataFrame,
+# Iterate through the already assigned user names in the DataFrame,
 # disregard existing user names and search for new not ones.
 # If none found, process sleep for "X" not time.
 # Otherwise, create a temporary DataFrame and concat to existing one.
 
 def getNames(submissions, new_subreddit):
+    '''
+
+    :param submissions: The complete DataFrame
+    :param new_subreddit: n new posts of a given subreddit
+    :return: A list of users who exist only in new posts
+    '''
     list_of_names = list(set(submissions['user_name'].tolist()))
 
     new_names = {"names": []}
@@ -105,7 +113,7 @@ def vector_transformers(text_column):
 
 
 # Clean dataset
-def clean_data(dataset):
+def CleanData(dataset):
     dataset = dataset[dataset['subreddit'] != 'depression']
     dataset = dataset[dataset['subreddit'] != 'AskReddit']
     dataset['post_text'] = dataset['post_text'].fillna('')
@@ -177,7 +185,9 @@ def addNewFeature(submissionDF):
     # adds a new column with appearance
     # Assign new columns to a DataFrame, returning a new object(a copy!) with the new columns added to the original ones
     submissionDF = submissionDF.assign(text_changed=pd.Series(data=np.zeros(submissionDF['submission_id'].shape[0])))
-    submissionDF.to_csv('SubmissionsDF2.csv', index=False)
+    submissionDF = submissionDF.assign(appearance=pd.Series(data=np.zeros(submissionDF['submission_id'].shape[0])))
+
+    submissionDF.to_csv('SubmissionsDF.csv', index=False)
 
 def update_data(dict, df):
     '''
@@ -261,3 +271,23 @@ def post_changed(dict, post, i, post_row):
 
     return False, text_changed
 
+def getNeutralUsers(users, df):
+    '''
+
+    :param users:
+    :param df:
+    :return: A list of the users who wrote only in neutral subreddits
+    '''
+
+    depression_subreddit_list = ['depression_help', 'lonely', 'SuicideWatch', 'depression',
+                                          'selfharm', 'mentalhealth', 'offmychest', 'Anxiety', ]
+
+    neutral_users = []
+    for user in users:
+        user_posts = df[df['user_name'] == user]
+        user_depression_subreddits = user_posts[~user_posts['subreddit'].isin(depression_subreddit_list)] # We need the opposite
+        if len(user_depression_subreddits) == 0:
+            neutral_users.append(user)
+            print(user, " was appended")
+
+    return neutral_users

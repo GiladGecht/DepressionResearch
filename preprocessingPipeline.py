@@ -13,32 +13,47 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split,cross_val_score
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 
-def DataFilter(i_DF):
-    i_DF = shuffle(i_DF)
+
+def DataFilter(DF):
+    '''
+
+    :param DF: The current DataFrame
+    :return: The DataFrame after filtering posts who were removed, empty or too short.
+    '''
+    DF = shuffle(DF)
     encoder = LabelEncoder()
-    i_DF['subreddit'] = encoder.fit_transform(i_DF['subreddit'])
-    i_DF['post_text'] = i_DF['post_text'].fillna('')
-    i_DF = i_DF[i_DF['post_text'] != '[removed]']
-    i_DF = i_DF[i_DF['title_length'] >= 20]
-    i_DF = i_DF.dropna()
-    return i_DF
+    DF['subreddit'] = encoder.fit_transform(DF['subreddit'])
+    DF['post_text'] = DF['post_text'].fillna('')
+    DF = DF[DF['post_text'] != '[removed]']
+    DF = DF[DF['title_length'] >= 20]
+    DF = DF.dropna()
+    return DF
 
-def FilterWholeData(io_PartialData, io_WholeData):
-    svc, count_vect = TitleClassifier(io_PartialData)
-    io_WholeData = CleanData(io_WholeData)
-    io_WholeData['predicted'] = svc.predict(count_vect.transform(io_WholeData['title']))
+def FilterWholeData(PartialData, WholeData):
+    '''
+
+    :param PartialData: The DataFrame with posts only from
+    AskReddit and the relevant subreddit for the desired type of depression
+
+    :param WholeData: The whole DataFrame
+
+    :return: A DataFrame, after cleaning irrelevant posts
+             and taking only popular subreddits from the whole DataFrame
+    '''
+    svc, count_vect = TitleClassifier(PartialData)
+    WholeData = CleanData(WholeData)
+    WholeData['predicted'] = svc.predict(count_vect.transform(WholeData['title']))
     # Filter out the data by noise
-    # Subreddits with less than 50 appearences are dropped out
-    counts = io_WholeData['subreddit'].value_counts()
+    # Subreddits with less than 50 appearances are dropped out
+    counts = WholeData['subreddit'].value_counts()
     popular_subreddits = counts[counts.values >= 50].keys()
-    io_WholeData = io_WholeData[(io_WholeData['subreddit'].isin(popular_subreddits))]
+    WholeData = WholeData[(WholeData['subreddit'].isin(popular_subreddits))]
 
-    return io_WholeData
+    return WholeData
 
 
 
 def Pipeline():
-
     df = pd.read_csv(r'/home/ohad/Desktop/Studies/Year3/Project/Updated_Data/anxietyTemp.csv')
     df = DataFilter(df)
 

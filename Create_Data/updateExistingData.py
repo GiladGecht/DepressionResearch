@@ -6,14 +6,15 @@ from datetime import datetime as dt
 # Changed from a recursive function to an infinite loop.
 # thus, no extra memory required.
 #
-index = 'reddit'
-doc_type = 'submission'
-es = utils.Elasticsearch("http://localhost:9200")
-if es.indices.exists(index=index):
-    index_counter = es.count(index=index)
-else:
-    es.indices.create(index=index, ignore=400)
-    index_counter = es.count(index=index)
+# index = 'reddit'
+# doc_type = 'submission'
+# es = utils.Elasticsearch("http://localhost:9200")
+# if es.indices.exists(index=index):
+#     index_counter = es.count(index=index)
+# else:
+#     es.indices.create(index=index, ignore=400)
+#     index_counter = es.count(index=index)
+#
 
 
 reddit = utils.connectToAPI()
@@ -23,16 +24,23 @@ print("Current DataFrame Shape:{}".format(submissionDF.shape))
 unique_names = submissionDF['user_name'].unique()
 print("Number of unique users:{}".format(len(unique_names)))
 
+'''
+    The updater takes a certain amount of users from the DataFrame, 
+    Download all of those users posts, cross reference them with the posts in DataFrame
+    And creates new lines if there is a new post or if the post was changed, it creates
+    a new line with a new index.
+'''
 
 users_list = []
-step = 25
-for i in range(0, len(unique_names), step):
+amountOfUsers = 2
+for i in range(0, len(unique_names), amountOfUsers):
     start = i
-    if (i+step) < len(unique_names):
-        end = i + step
+    if (i+amountOfUsers) < len(unique_names):
+        end = i + amountOfUsers
     else:
         end = len(unique_names) + 1
 
+    # Dataframe columns
     topics_dict = {
         "submission_id": [],
         "title": [],
@@ -97,19 +105,19 @@ for i in range(0, len(unique_names), step):
                                'link_karma', 'upvote_ratio', 'date_created', 'user_name', 'appearance', 'text_changed',
                                'num_words_title','post_length' , 'num_words_post']]
 
-    print("Loading to Elasticsearch")
-    print(len(topics_dict))
-    topics_dict.to_csv('temp_json.csv',index=False)
-    topics_dict = pd.read_csv('temp_json.csv')
-    topics_dict.to_json('temp_json.json', orient='index')
-
-    utils.init_elastic(index=index, doc_type=doc_type, elastic_address="http://localhost:9200", index_counter=index_counter)
-    index_counter = es.count(index=index)
+    # print("Loading to Elasticsearch")
+    # print(len(topics_dict))
+    # topics_dict.to_csv('temp_json.csv',index=False)
+    # topics_dict = pd.read_csv('temp_json.csv')
+    # topics_dict.to_json('temp_json.json', orient='index')
+    #
+    # utils.init_elastic(index=index, doc_type=doc_type, elastic_address="http://localhost:9200", index_counter=index_counter)
+    # index_counter = es.count(index=index)
     print("Saving")
     topics_dict = utils.pd.concat([topics_dict, submissionDF], sort=False)
     topics_dict = topics_dict.fillna('')
 
-    topics_dict.to_csv('SubmissionsDF2.csv', index=False)
+    topics_dict.to_csv('SubmissionsDF.csv', index=False)
     print("Saved\n")
     submissionDF = utils.loadData()  # Reload data to work with the new DF we just saved
 

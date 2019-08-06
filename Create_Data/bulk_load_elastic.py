@@ -3,7 +3,7 @@ import pandas as pd
 from elasticsearch import Elasticsearch
 
 
-data = pd.read_csv(r'C:\Users\Gilad\PycharmProjects\DepressionResearch\Create_Data\SubmissionsDF.csv')
+data = pd.read_csv(r'/home/ohad/PycharmProjects/DepressionResearch/Create_Data/SubmissionsDF2.csv')
 data.to_json('bulk_load.json', orient='index')
 
 json_data = open('bulk_load.json').read()

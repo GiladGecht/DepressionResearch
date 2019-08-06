@@ -1,56 +1,63 @@
 import Create_Data.UtilFunctions as utils
-import pandas as pd
+import time
+from tqdm import tqdm
 
 # Changed from a recursive function to an infinite loop.
 # thus, no extra memory required.
 #
 index = 'reddit'
 doc_type = 'submission'
-es = utils.Elasticsearch("http://localhost:9200")
-if es.indices.exists(index=index):
-    index_counter = es.count(index=index)
-else:
-    es.indices.create(index=index, ignore=400)
-    index_counter = es.count(index=index)
+# es = utils.Elasticsearch("http://localhost:9200")
+# if es.indices.exists(index=index):
+#     index_counter = es.count(index=index)
+# else:
+#     es.indices.create(index=index, ignore=400)
+#     index_counter = es.count(index=index)
+
 
 while True:
 
+    print("Connecting to Reddit's API...")
     reddit = utils.connectToAPI()
-    new_subreddit = utils.getNewSubreddit(reddit, 20)
+
+    print("Fetching new names...")
+    new_subreddit = utils.getNewSubreddit(reddit, 150)
     submissionDF = utils.loadData()
+    print("Loading...")
     print("Current DataFrame Shape:{}".format(submissionDF.shape))
 
     unique_names = utils.getNames(submissionDF, new_subreddit)
     print("Number of new users:{}".format(len(unique_names)))
 
     if len(unique_names) == 0:
+        # No new posts
         print("Going to sleep")
-        # utils.sleep(60 * 20)
+        time.sleep(60 * 20)
         print("Waking up")
         pass  # clear - works
-    else:
 
+    else:
         topics_dict = {
             "submission_id": [],
-            "title": [],
-            "score": [],
-            "num_comments": [],
-            "title_length": [],
-            "subreddit": [],
-            "post_text": [],
+            "title":         [],
+            "score":         [],
+            "num_comments":  [],
+            "title_length":  [],
+            "subreddit":     [],
+            "post_text":     [],
             "comment_karma": [],
-            "link_karma": [],
-            "upvote_ratio": [],
-            "date_created": [],
-            "user_name": [],
-            "appearance": [],
-            "text_changed": [],
+            "link_karma":    [],
+            "upvote_ratio":  [],
+            "date_created":  [],
+            "user_name":     [],
+            "appearance":    [],
+            "text_changed":  [],
         }
 
 
         print("Entering Part 1\n")
-        for curr_id in unique_names:
-            print(curr_id)
+
+        for curr_id in tqdm(unique_names):
             try:
                 for submission in reddit.redditor(str(curr_id)).submissions.new():
                     userName = str(submission.author)
@@ -70,27 +77,39 @@ while True:
                     topics_dict['text_changed'].append(0)
 
             except Exception as e:
-                print("Error occured with id:{}".format(str(curr_id)))
+                print("\nError occured with id:{}".format(str(curr_id)))
                 print(e)
-                pass
+                next
 
         topics_dict = utils.pd.DataFrame(data=topics_dict)
 
-        print("Entering Part 2")
-        topics_dict = topics_dict[['submission_id', 'title', 'score', 'num_comments',
-                                   'title_length', 'subreddit', 'post_text', 'comment_karma',
-                                   'link_karma', 'upvote_ratio', 'date_created', 'user_name', 'appearance', 'text_changed']]
+        print("\nEntering Part 2")
+        topics_dict = topics_dict[['submission_id',
+                                   'title',
+                                   'score',
+                                   'num_comments',
+                                   'title_length',
+                                   'subreddit',
+                                   'post_text',
+                                   'comment_karma',
+                                   'link_karma',
+                                   'upvote_ratio',
+                                   'date_created',
+                                   'user_name',
+                                   'appearance',
+                                   'text_changed']]
+
         topics_dict = utils.createMoreFeatures(topics_dict)
 
-        print("Loading to Elasticsearch")
-        topics_dict.to_csv('temp_json.csv',index=False)
-        topics_dict = pd.read_csv('temp_json.csv')
-        topics_dict.to_json('temp_json.json', orient='index')
-
-        utils.init_elastic(index=index, doc_type=doc_type, elastic_address="http://localhost:9200", index_counter=index_counter)
-        index_counter = es.count(index=index)
+        # print("Loading to Elasticsearch")
+        # topics_dict.to_csv('temp_json.csv',index=False)
+        # topics_dict = pd.read_csv('temp_json.csv')
+        # topics_dict.to_json('temp_json.json', orient='index')
+        #
+        # utils.init_elastic(index=index, doc_type=doc_type, elastic_address="http://localhost:9200", index_counter=index_counter)
+        # index_counter = es.count(index=index)
         print("Saving")
         topics_dict = utils.pd.concat([topics_dict, submissionDF], sort=False)
         topics_dict = topics_dict.fillna('')
 
-        topics_dict.to_csv('SubmissionsDF2.csv', index=False)
+        topics_dict.to_csv('SubmissionsDF.csv', index=False)
