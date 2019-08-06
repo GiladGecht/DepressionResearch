@@ -10,13 +10,14 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 
 warnings.simplefilter("ignore")
 
+
 def TitleClassifier(df):
-    '''
+    """
     First classifier - classifying title with SVM
 
     :param df: The DataFrame
     :return: weights of the algorithms
-    '''
+    """
     target = 'subreddit'
     cols = 'title'
 
@@ -48,12 +49,13 @@ def TitleClassifier(df):
 
     return svc, count_vect
 
+
 def CleanData(dataset):
-    '''
+    """
 
     :param dataset: The DataFrame
     :return: The DataFrame, after removing posts who were removed, and deleting new lines.S
-    '''
+    """
     dataset['post_text'] = dataset['post_text'].fillna('')
     dataset = dataset[dataset['post_text'] != '[removed]']
     dataset['post_text'] = dataset['post_text'].apply(lambda x: x.replace('\r', ''))
@@ -64,12 +66,13 @@ def CleanData(dataset):
 
     return dataset
 
+
 def GetRegularExpressions(FullDF):
-    '''
+    """
     Search by using regular expressions
     which are built in the following way: "i ...... " + keywordToFilterBy + "..."
     Example: "i ...... anxi/ety/ous/olytic..."
-    '''
+    """
     keywordToFilterBy = input("Enter keyword to run regular expressions on\n")
     myRegEx = r'\bi\s.*\b' + keywordToFilterBy + r'[\w]*\b'
     count = 0
@@ -89,12 +92,12 @@ def GetRegularExpressions(FullDF):
     return post
 
 def GetDepressionGroupUsersNeutralPosts(RegularExpressionsPosts, FullDF):
-    '''
+    """
 
     :param RegularExpressionsPosts: DataFrame containing the posts filtered by Regular Expression
     :param FullDF: The complete data
     :return: A DataFrame containing the neutral posts from the depression users
-    '''
+    """
 
     # Take n largest subreddit by appreance in the filtered dataset
     n_largest = list(RegularExpressionsPosts['subreddit'].value_counts().nlargest(7).keys())
@@ -142,18 +145,21 @@ def GetDepressionGroupUsersNeutralPosts(RegularExpressionsPosts, FullDF):
 
     return depression_group_users_neutral_posts
 
+
 def ConvertInputToListOfStrings(Subreddits):
     Subreddits = Subreddits.replace("'", "")
     Subreddits = Subreddits.split(',')
-    return  Subreddits
+    return Subreddits
+
 
 def GetNeutralAndDepressionSubreddits(Whole_data, Subreddits):
-    '''
+    """
 
     :param Whole_data: The complete DataFrame
     :param Subreddits:  a set of all the subreddits
     :return: a list of neutral subreddits and a list of depression subreddits
-    '''
+    """
+
     neutralSubreddits = []
     depression_subreddits = []
     for i in Subreddits:
@@ -175,14 +181,14 @@ def GetNeutralAndDepressionSubreddits(Whole_data, Subreddits):
     print(Whole_data[Whole_data['subreddit'].isin(neutralSubreddits)]['subreddit'].value_counts())
     return neutralSubreddits, depression_subreddits
 
-def GetNeutralDepressionUsers(WholeData, AnxietySubreddits, NeutralSubreddits):
-    '''
 
+def GetNeutralDepressionUsers(WholeData, AnxietySubreddits, NeutralSubreddits):
+    """
     :param WholeData: The complete DataFrame
     :param AnxietySubreddits: A list of Anxiety subreddits
     :param NeutralSubreddits: A list of neutral subreddits
     :return: A DataFrame of users who posted in both depression and neutral subreddits
-    '''
+    """
 
     # Split the dataframe to neutral and depressed by the filtered subreddits
     depression_df = WholeData[WholeData['subreddit'].isin(AnxietySubreddits)]

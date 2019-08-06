@@ -15,11 +15,11 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 
 
 def DataFilter(DF):
-    '''
+    """
 
     :param DF: The current DataFrame
     :return: The DataFrame after filtering posts who were removed, empty or too short.
-    '''
+    """
 
     DF = shuffle(DF)
     encoder = LabelEncoder()
@@ -31,7 +31,7 @@ def DataFilter(DF):
     return DF
 
 def FilterWholeData(PartialData, WholeData):
-    '''
+    """
 
     :param PartialData: The DataFrame with posts only from
     AskReddit and the relevant subreddit for the desired type of depression
@@ -40,7 +40,8 @@ def FilterWholeData(PartialData, WholeData):
 
     :return: A DataFrame, after cleaning irrelevant posts
              and taking only popular subreddits from the whole DataFrame
-    '''
+    """
+
     svc, count_vect = TitleClassifier(PartialData)
     WholeData = CleanData(WholeData)
     WholeData['predicted'] = svc.predict(count_vect.transform(WholeData['title']))
@@ -60,7 +61,6 @@ def Pipeline():
 
     whole_data = pd.read_csv(r'/home/ohad/Desktop/Studies/Year3/Project/Updated_Data/SubmissionsDF.csv', index_col=0)
     whole_data = FilterWholeData(df, whole_data)
-
 
     # Number of UNIQUE subreddits left after being filtered
     subreddits = set(whole_data['subreddit'])
@@ -156,7 +156,6 @@ def Pipeline():
     non_depressed_people = full_df.drop(depression_group_users_indices, axis=0).copy()
     non_depressed_people = non_depressed_people[non_depressed_people['predicted'] == 1]
     non_depressed_people = non_depressed_people[non_depressed_people['num_words_post'] > 50]
-    non_depressed_people.shape
 
     print(non_depressed_people.head())
 
@@ -167,7 +166,6 @@ def Pipeline():
 
     depression_group_users_neutral_posts = depression_group_users_neutral_posts[
         depression_group_users_neutral_posts['subreddit'].isin(filtered_neutral_subreddits)]
-    depression_group_users_neutral_posts.shape
 
     # Print how many unique users we have for each group:
     print("Number of Unique depressed posts users:", len(list(set(depressed_group_depressed_posts['user_name']))))

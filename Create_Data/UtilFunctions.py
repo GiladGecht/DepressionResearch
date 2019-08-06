@@ -25,6 +25,7 @@ from elasticsearch import Elasticsearch
 
 # ----------- Helper Functions ----------- #
 
+
 # Load The Data
 def loadData():
     submissionDF = pd.read_csv(r'C:\Users\Gilad Gecht\PycharmProjects\DepressionResearch\Create_Data\SubmissionsDF.csv')
