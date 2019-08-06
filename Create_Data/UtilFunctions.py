@@ -17,7 +17,6 @@ import pandas as pd
 import seaborn as sb
 import matplotlib.pyplot as plt
 
-
 from time import time
 from sklearn.feature_extraction.text import CountVectorizer,TfidfTransformer
 from urllib3.exceptions import HTTPError
@@ -28,7 +27,7 @@ from elasticsearch import Elasticsearch
 
 # Load The Data
 def loadData():
-    submissionDF = pd.read_csv(r'/home/ohad/PycharmProjects/DepressionResearch/Create_Data/SubmissionsDF.csv')
+    submissionDF = pd.read_csv(r'/home/ohad/PycharmProjects/DepressionResearch/Create_Data/SubmissionsDF2.csv')
     return submissionDF
 
 
@@ -46,7 +45,7 @@ def connectToAPI():
 
 # Connect to desired subreddit's new section
 def getNewSubreddit(redditInstance, limit):
-    subreddit = redditInstance.subreddit('showerthoughts')
+    subreddit = redditInstance.subreddit('Depression')
     new_subreddit = subreddit.new(limit=limit)
 
     return new_subreddit
@@ -58,12 +57,12 @@ def getNewSubreddit(redditInstance, limit):
 # Otherwise, create a temporary DataFrame and concat to existing one.
 
 def getNames(submissions, new_subreddit):
-    '''
-
+    """
     :param submissions: The complete DataFrame
     :param new_subreddit: n new posts of a given subreddit
     :return: A list of users who exist only in new posts
-    '''
+    """
+
     list_of_names = list(set(submissions['user_name'].tolist()))
 
     new_names = {"names": []}
@@ -113,23 +112,23 @@ def vector_transformers(text_column):
 
 
 # Clean dataset
-def CleanData(dataset):
+def clean_data(dataset):
     dataset = dataset[dataset['subreddit'] != 'depression']
     dataset = dataset[dataset['subreddit'] != 'AskReddit']
     dataset['post_text'] = dataset['post_text'].fillna('')
     dataset = dataset[dataset['post_text'] != '[removed]']
     dataset = dataset.dropna()
-    dataset = dataset.reset_index()#.drop('index', axis=1)
+    dataset = dataset.reset_index(drop=True)
 
     return dataset
 
 
 def load_json_data():
-    '''
+    """
     Get a csv file created by the current iteration of "createMoreData".
     Convert that csv file to a temporary json file, "temp_json.json".
     open and re-parse it in a way we can upload to elastic => "temp.json"
-    '''
+    """
 
     with open('temp_json.json') as json_data:
         d = json.load(json_data)
@@ -143,12 +142,13 @@ def load_json_data():
 
     return data
 
+
 def load_to_elastic(data,index,doc_type,es, counter):
-    '''
+    """
     Iterate through the data file, if the length of the data is larger than 1
     iterate through the json object and upload each object to elastic.
     Indexing to the given index with the given doc type
-    '''
+    """
 
 
     count = counter['count']
@@ -165,11 +165,11 @@ def load_to_elastic(data,index,doc_type,es, counter):
 
 
 def init_elastic(index, doc_type, elastic_address, index_counter):
-    '''
+    """
     Create the Elasticsearch instance
     check if the given index exists, if not create one
     load the given data
-    '''
+    """
 
     es = Elasticsearch(elastic_address) # TODO: Switch localhost to elastic address in the future
     object = load_json_data()
@@ -185,16 +185,15 @@ def addNewFeature(submissionDF):
     # adds a new column with appearance
     # Assign new columns to a DataFrame, returning a new object(a copy!) with the new columns added to the original ones
     submissionDF = submissionDF.assign(text_changed=pd.Series(data=np.zeros(submissionDF['submission_id'].shape[0])))
-    submissionDF = submissionDF.assign(appearance=pd.Series(data=np.zeros(submissionDF['submission_id'].shape[0])))
+    submissionDF.to_csv('SubmissionsDF2.csv', index=False)
 
-    submissionDF.to_csv('SubmissionsDF.csv', index=False)
 
 def update_data(dict, df):
-    '''
+    """
     :param dict: all of the user's updated posts from reddit
     :param df: all of the user's posts from the dataframe
     :return: dictionary with all of the posts from both sources, updated.
-    '''
+    """
 
     indices_to_remove = []
     updated_posts = 0
@@ -212,7 +211,6 @@ def update_data(dict, df):
                 updated_posts += 1
                 if changed[1]:
                     dict['text_changed'][i] = 1
-
 
             else:  # save indices to delete later - nothing changed
                 indices_to_remove.append(i)
@@ -232,13 +230,13 @@ def update_data(dict, df):
 
 
 def post_changed(dict, post, i, post_row):
-    '''
+    """
     :param dict: dictionary with the users posts
     :param post: last version of the post
     :param i: index of the current post in dictionary
     :param post_row: index of the current post in df
     :return: True if post had been changed, False otherwise
-    '''
+    """
 
     # remove keys that don't need checking
     keys = list(dict.keys())
@@ -270,3 +268,4 @@ def post_changed(dict, post, i, post_row):
             return True, text_changed
 
     return False, text_changed
+

@@ -3,7 +3,7 @@
 Date Created: December 10th, 2018
 '''
 
-# ------- Imports ------- #
+# ====================== Imports ====================== #
 import Create_Data.UtilFunctions as utils
 
 from sklearn.utils import shuffle
@@ -13,17 +13,19 @@ from sklearn.metrics import confusion_matrix
 from sklearn.svm import LinearSVC
 
 
-# ------- Load Data ------- #
+# ======================  Load Data ======================  #
 df = utils.pd.read_csv('https://raw.githubusercontent.com/GiladGecht/DepressionResearch/master/depression_neutral_df.csv')
 
-# ------- Data Preprocessing ------- #
+# ======================  Data Preprocessing ====================== #
 
 '''
+#============================================================================================================#
 Encoding the target label => Subreddit Name to 0/1, Neutral or Depression
 For the current moment, we're keeping empty posts, this might be a key feature,
 perhaps depressed people tend to write way more than a non-depressed person.
 Since removed doesn't imply anything, we'll remove rows which contain such behaviour.
 Eventually, we'll remove any other signs of Nulls in the dataframe.
+#============================================================================================================#
 '''
 
 df = shuffle(df)
@@ -72,6 +74,7 @@ whole_data['predicted'] = svc.predict(count_vect.transform(whole_data['title']))
 # ------- Check Results ------- #
 
 '''
+#============================================================================================================#
 Filter out subreddits with less than 50 appearances.
 After filtering, for each subreddit, check the distribution in the classification.
 If the classification tends to fit more to the depression side (over 70% of the classification was 1)
@@ -79,7 +82,7 @@ add to the depression list.
 if the classification tends to be more neutral, i.e over 70% was 0, send to neutral.
 
 CURRENT THRESHOLD = 0.7 
-
+#============================================================================================================#
 '''
 predicted = whole_data[['title','subreddit','predicted']]
 counts = whole_data['subreddit'].value_counts()
