@@ -1,6 +1,6 @@
 '''
-@Authors: Gilad Gecht, Ohad Valtzer, Alin Eliovich
-Date Craeted: December 10th, 2018
+@Authors: Gilad Gecht, Ohad Valtzer, Aline Eliovich
+Date Created: December 10th, 2018
 '''
 
 # ------- Imports ------- #
@@ -66,7 +66,7 @@ print("AUC Score:", utils.np.mean(cross_val_score(svc, X_train, y_train, cv=5, s
 
 # ------- Predict Real Data ------- #
 whole_data = utils.pd.read_csv(r'/home/ohad/PycharmProjects/DepressionResearch/Create_Data/SubmissionsDF2.csv',index_col=0)
-whole_data = utils.clean_data(whole_data)
+whole_data = utils.CleanData(whole_data)
 whole_data['predicted'] = svc.predict(count_vect.transform(whole_data['title']))
 
 # ------- Check Results ------- #

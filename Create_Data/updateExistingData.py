@@ -31,6 +31,7 @@ print("Number of unique users:{}".format(len(unique_names)))
     a new line with a new index.
 '''
 
+
 users_list = []
 amountOfUsers = 2
 for i in range(0, len(unique_names), amountOfUsers):

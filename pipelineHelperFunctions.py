@@ -183,6 +183,7 @@ def GetNeutralDepressionUsers(WholeData, AnxietySubreddits, NeutralSubreddits):
     :param NeutralSubreddits: A list of neutral subreddits
     :return: A DataFrame of users who posted in both depression and neutral subreddits
     '''
+
     # Split the dataframe to neutral and depressed by the filtered subreddits
     depression_df = WholeData[WholeData['subreddit'].isin(AnxietySubreddits)]
     neutral_df = WholeData[WholeData['subreddit'].isin(NeutralSubreddits)]

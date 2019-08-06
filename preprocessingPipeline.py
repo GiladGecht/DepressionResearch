@@ -20,6 +20,7 @@ def DataFilter(DF):
     :param DF: The current DataFrame
     :return: The DataFrame after filtering posts who were removed, empty or too short.
     '''
+
     DF = shuffle(DF)
     encoder = LabelEncoder()
     DF['subreddit'] = encoder.fit_transform(DF['subreddit'])

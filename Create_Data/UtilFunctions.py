@@ -270,24 +270,3 @@ def post_changed(dict, post, i, post_row):
             return True, text_changed
 
     return False, text_changed
-
-def getNeutralUsers(users, df):
-    '''
-
-    :param users:
-    :param df:
-    :return: A list of the users who wrote only in neutral subreddits
-    '''
-
-    depression_subreddit_list = ['depression_help', 'lonely', 'SuicideWatch', 'depression',
-                                          'selfharm', 'mentalhealth', 'offmychest', 'Anxiety', ]
-
-    neutral_users = []
-    for user in users:
-        user_posts = df[df['user_name'] == user]
-        user_depression_subreddits = user_posts[~user_posts['subreddit'].isin(depression_subreddit_list)] # We need the opposite
-        if len(user_depression_subreddits) == 0:
-            neutral_users.append(user)
-            print(user, " was appended")
-
-    return neutral_users
