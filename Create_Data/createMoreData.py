@@ -37,6 +37,7 @@ while True:
         pass  # clear - works
 
     else:
+
         topics_dict = {
             "submission_id": [],
             "title":         [],
