@@ -27,7 +27,7 @@ from elasticsearch import Elasticsearch
 
 # Load The Data
 def loadData():
-    submissionDF = pd.read_csv(r'/home/ohad/PycharmProjects/DepressionResearch/Create_Data/SubmissionsDF2.csv')
+    submissionDF = pd.read_csv(r'C:\Users\Gilad Gecht\PycharmProjects\DepressionResearch\Create_Data\SubmissionsDF.csv')
     return submissionDF
 
 
@@ -137,7 +137,7 @@ def load_json_data():
         json.dump(d, json_file, indent=4)
         json_file.write("\n")
 
-    json_data = open(r'/home/ohad/PycharmProjects/DepressionResearch/Create_Data/temp.json').read()
+    json_data = open(r'C:\Users\Gilad Gecht\PycharmProjects\DepressionResearch\Create_Data\temp.json').read()
     data = json.loads(json_data)
 
     return data
