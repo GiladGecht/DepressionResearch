@@ -1,12 +1,11 @@
 import Create_Data.UtilFunctions as utils
 import time
 from tqdm import tqdm
+from Create_Data.Logging import Logger
 
-# Changed from a recursive function to an infinite loop.
-# thus, no extra memory required.
-#
 index = 'reddit'
 doc_type = 'submission'
+filename = utils.os.path.basename(__file__)[:-3]
 # es = utils.Elasticsearch("http://localhost:9200")
 # if es.indices.exists(index=index):
 #     index_counter = es.count(index=index)
@@ -16,25 +15,26 @@ doc_type = 'submission'
 
 
 while True:
-
-    print("Connecting to Reddit's API...")
+    logger = Logger(filename=filename)
+    logger.log(message="Connecting to Reddit's API...")
     reddit = utils.connectToAPI()
 
-    print("Fetching new names...")
-    new_subreddit = utils.getNewSubreddit(reddit, 150)
+    logger.log(message="Fetching new names...")
+    new_subreddit = utils.getNewSubreddit(reddit, 20)
     submissionDF = utils.loadData()
-    print("Loading...")
-    print("Current DataFrame Shape:{}".format(submissionDF.shape))
+    init_num_samples = submissionDF.shape[0]
+    logger.log(message="Loading...")
+    logger.log(message="Current DataFrame Shape:{}".format(submissionDF.shape))
 
     unique_names = utils.getNames(submissionDF, new_subreddit)
-    print("Number of new users:{}".format(len(unique_names)))
+    logger.log(message="Number of new users:{}".format(len(unique_names)))
 
     if len(unique_names) == 0:
         # No new posts
-        print("Going to sleep")
+        logger.log("Going to sleep")
         time.sleep(60 * 20)
-        print("Waking up")
-        pass  # clear - works
+        logger.log("Waking up")
+        next
 
     else:
 
@@ -55,8 +55,7 @@ while True:
             "text_changed":  [],
         }
 
-
-        print("Entering Part 1\n")
+        logger.log(message="Entering Part 1\n")
 
         for curr_id in tqdm(unique_names):
             try:
@@ -78,13 +77,13 @@ while True:
                     topics_dict['text_changed'].append(0)
 
             except Exception as e:
-                print("\nError occured with id:{}".format(str(curr_id)))
-                print(e)
+                logger.log(message="\nError occured with id:{}".format(str(curr_id)))
+                logger.log(message=e)
                 next
 
         topics_dict = utils.pd.DataFrame(data=topics_dict)
 
-        print("\nEntering Part 2")
+        logger.log("Entering Part 2")
         topics_dict = topics_dict[['submission_id',
                                    'title',
                                    'score',
@@ -109,8 +108,9 @@ while True:
         #
         # utils.init_elastic(index=index, doc_type=doc_type, elastic_address="http://localhost:9200", index_counter=index_counter)
         # index_counter = es.count(index=index)
-        print("Saving")
+        logger.log(message="Saving")
         topics_dict = utils.pd.concat([topics_dict, submissionDF], sort=False)
         topics_dict = topics_dict.fillna('')
 
         topics_dict.to_csv('SubmissionsDF.csv', index=False)
+        logger.log(message="Indexed {} new samples".format(topics_dict.shape[0] - init_num_samples))

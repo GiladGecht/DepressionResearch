@@ -1,7 +1,7 @@
 # ----------- Imports ----------- #
 import Create_Data.UtilFunctions as utils
 from datetime import datetime as dt
-# import pandas as pd
+from Create_Data.Logging import Logger
 
 # Changed from a recursive function to an infinite loop.
 # thus, no extra memory required.
@@ -16,13 +16,15 @@ from datetime import datetime as dt
 #     index_counter = es.count(index=index)
 #
 
+filename = utils.os.path.basename(__file__)[:-3]
+logger = Logger(filename=filename)
 
 reddit = utils.connectToAPI()
 submissionDF = utils.loadData()
-print("Current DataFrame Shape:{}".format(submissionDF.shape))
+logger.log("Current DataFrame Shape:{}".format(submissionDF.shape))
 
 unique_names = submissionDF['user_name'].unique()
-print("Number of unique users:{}".format(len(unique_names)))
+logger.log("Number of unique users:{}".format(len(unique_names)))
 
 '''
     The updater takes a certain amount of users from the DataFrame, 
@@ -63,12 +65,12 @@ for i in range(0, len(unique_names), amountOfUsers):
     }
 
     # ----------- Getting the current data from reddit ----------- #
-    print("Entering Part 1\n")
+    logger.log("Entering Part 1\n")
     for curr_id in unique_names[start:end]:
         if type(curr_id) is str:
-            print(curr_id)
+            logger.log(curr_id)
             users_list.append(curr_id)
-            print("Number of posts: ", submissionDF['user_name'].value_counts()[curr_id])
+            logger.log("Number of posts: ", submissionDF['user_name'].value_counts()[curr_id])
             try:
                 for submission in reddit.redditor(str(curr_id)).submissions.new():
                     userName = str(submission.author)
@@ -93,14 +95,14 @@ for i in range(0, len(unique_names), amountOfUsers):
                     topics_dict['num_words_post'].append(len(topics_dict['post_text'][-1].replace("\r", "").split()))
 
             except Exception as e:
-                print("Error occurred with id:{}".format(str(curr_id)))
-                print(e)
+                logger.log("Error occurred with id:{}".format(str(curr_id)))
+                logger.log(e)
                 pass
 
     topics_dict = utils.update_data(topics_dict, submissionDF)
     topics_dict = utils.pd.DataFrame(data=topics_dict)
 
-    print("Entering Part 2")
+    logger.log("Entering Part 2")
     topics_dict = topics_dict[['submission_id', 'title', 'score', 'num_comments',
                                'title_length', 'subreddit', 'post_text', 'comment_karma',
                                'link_karma', 'upvote_ratio', 'date_created', 'user_name', 'appearance', 'text_changed',
@@ -114,13 +116,13 @@ for i in range(0, len(unique_names), amountOfUsers):
     #
     # utils.init_elastic(index=index, doc_type=doc_type, elastic_address="http://localhost:9200", index_counter=index_counter)
     # index_counter = es.count(index=index)
-    print("Saving")
+    logger.log("Saving")
     topics_dict = utils.pd.concat([topics_dict, submissionDF], sort=False)
     topics_dict = topics_dict.fillna('')
 
     topics_dict.to_csv('SubmissionsDF.csv', index=False)
-    print("Saved\n")
+    logger.log("Saved\n")
     submissionDF = utils.loadData()  # Reload data to work with the new DF we just saved
 
 
-print("Finished!")
+logger.log("Finished!")

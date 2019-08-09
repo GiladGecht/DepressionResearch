@@ -2,15 +2,18 @@ import re
 import pandas as pd
 import numpy as np
 import warnings
+import Create_Data.UtilFunctions as utils
 
 from sklearn.svm import LinearSVC
+from Create_Data.Logging import Logger
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split,cross_val_score
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 
 warnings.simplefilter("ignore")
 
-
+filename = utils.os.path.basename(__file__)[:-3]
+logger = Logger(filename=filename)
 def TitleClassifier(df):
     """
     First classifier - classifying title with SVM
@@ -36,16 +39,16 @@ def TitleClassifier(df):
     y_pred = svc.predict(X_test)
     score = svc.score(X_test, y_test)
 
-    print("First Classifier - Title (with SVM)\n")
-    print("Accuracy Score:", score)
-    print(confusion_matrix(y_pred=y_pred, y_true=y_test))
-    print("AUC Score:", np.mean(cross_val_score(svc, X_train, y_train, cv=10, scoring='roc_auc')))
+    logger.log("First Classifier - Title (with SVM)\n")
+    logger.log("Accuracy Score:{}".format(score))
+    logger.log(confusion_matrix(y_pred=y_pred, y_true=y_test))
+    logger.log("AUC Score:{}".format(np.mean(cross_val_score(svc, X_train, y_train, cv=10, scoring='roc_auc'))))
 
     feature_names = np.array(count_vect.get_feature_names())
     sorted_coef_index = svc.coef_[0].argsort()
 
-    print('\nSmallest Coefs: \n{}\n'.format(feature_names[sorted_coef_index[:10]]))
-    print('Largest Coefs: \n{}\n'.format(feature_names[sorted_coef_index[:-11:-1]]))
+    logger.log('\nSmallest Coefs: \n{}\n'.format(feature_names[sorted_coef_index[:10]]))
+    logger.log('Largest Coefs: \n{}\n'.format(feature_names[sorted_coef_index[:-11:-1]]))
 
     return svc, count_vect
 
@@ -88,7 +91,7 @@ def GetRegularExpressions(FullDF):
             subreddits.append(row[1]['subreddit'])
             sentences.append(sentence)
             count += 1
-    print("Amount of posts containing the regular expression: ", count)
+    logger.log("Amount of posts containing the regular expression:{} ".format(count))
     return post
 
 def GetDepressionGroupUsersNeutralPosts(RegularExpressionsPosts, FullDF):
@@ -138,10 +141,10 @@ def GetDepressionGroupUsersNeutralPosts(RegularExpressionsPosts, FullDF):
         depression_group_users_neutral_posts['subreddit'].isin(filtered_neutral_subreddits)]
 
     # Print how many unique users we have for each group:
-    print("Number of Unique depressed posts users:", len(list(set(depressed_group_depressed_posts['user_name']))))
-    print("Number of Unique depressed neutral posts users:",
-          len(list(set(depression_group_users_neutral_posts['user_name']))))
-    print("Number of Unique neutral posts users", len(list(set(non_depressed_people['user_name']))))
+    logger.log("Number of Unique depressed posts users:{}".format(len(list(set(depressed_group_depressed_posts['user_name'])))))
+    logger.log("Number of Unique depressed neutral posts users:{}".format(
+          len(list(set(depression_group_users_neutral_posts['user_name'])))))
+    logger.log("Number of Unique neutral posts users:{}".format(len(list(set(non_depressed_people['user_name'])))))
 
     return depression_group_users_neutral_posts
 
@@ -174,11 +177,11 @@ def GetNeutralAndDepressionSubreddits(Whole_data, Subreddits):
             if values_perc[0] >= 0.7:
                 depression_subreddits.append(i)
 
-    print("Distribution of depression subreddits\n")
-    print(Whole_data[Whole_data['subreddit'].isin(depression_subreddits)]['subreddit'].value_counts())
+    logger.log("Distribution of depression subreddits\n")
+    logger.log(Whole_data[Whole_data['subreddit'].isin(depression_subreddits)]['subreddit'].value_counts())
 
-    print("Distribution of neutral subreddits\n")
-    print(Whole_data[Whole_data['subreddit'].isin(neutralSubreddits)]['subreddit'].value_counts())
+    logger.log("Distribution of neutral subreddits\n")
+    logger.log(Whole_data[Whole_data['subreddit'].isin(neutralSubreddits)]['subreddit'].value_counts())
     return neutralSubreddits, depression_subreddits
 
 
@@ -194,9 +197,9 @@ def GetNeutralDepressionUsers(WholeData, AnxietySubreddits, NeutralSubreddits):
     depression_df = WholeData[WholeData['subreddit'].isin(AnxietySubreddits)]
     neutral_df = WholeData[WholeData['subreddit'].isin(NeutralSubreddits)]
 
-    print("Anxiety group size:\n\n", depression_df.shape)
-    print(20 * "-")
-    print("neutral group size:\n\n", neutral_df.shape)
+    logger.log("Anxiety group size:{}\n\n".format(depression_df.shape))
+    logger.log(20 * "-")
+    logger.log("neutral group size:{}\n\n".format(neutral_df.shape))
 
     # Get the list of all unique users for each type of dataset
     depression_names = list(set(depression_df['user_name']))
@@ -211,7 +214,7 @@ def GetNeutralDepressionUsers(WholeData, AnxietySubreddits, NeutralSubreddits):
     for i in depression_names:
         if i in neutral_names:
             both.append(i)
-    print("Amount of unique users who are in both groups: ", len(both))
+    logger.log("Amount of unique users who are in both groups:{} ".format(len(both)))
 
     anxietyGroupSize = 0
     neutralGroupSize = 0
@@ -221,9 +224,9 @@ def GetNeutralDepressionUsers(WholeData, AnxietySubreddits, NeutralSubreddits):
     for user in neutral_names:
         neutralGroupSize += WholeData[WholeData['user_name'] == user].shape[0]
 
-    print("Posts taken from anxious users: ", anxietyGroupSize)
-    print(20 * "-")
-    print("Posts taken from neutral users: ", neutralGroupSize)
+    logger.log("Posts taken from anxious users:{} ".format(anxietyGroupSize))
+    logger.log(20 * "-")
+    logger.log("Posts taken from neutral users:{} ".format(neutralGroupSize))
 
     full_df = full_df[full_df['user_name'].isin(both)]
     full_df = full_df.sort_values(by=['user_name', 'date_created'], ascending=False)

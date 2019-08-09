@@ -8,6 +8,7 @@ Title - Analyzing depression symptoms in social media
 '''
 
 # ----------- Imports ----------- #
+import os
 import time
 import praw
 import json

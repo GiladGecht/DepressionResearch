@@ -17,9 +17,11 @@ import warnings
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import Create_Data.UtilFunctions as utils
 
 from keras.optimizers import Adam
 from keras.models import Sequential
+from Create_Data.Logging import Logger
 from keras.preprocessing.text import Tokenizer
 from keras_models.preprocessing import Preprocessing
 from Create_Data.UtilFunctions import confusion_matrix, classification_report
@@ -27,6 +29,8 @@ from keras_models.keras_util_functions import split_user_train_test, train_valid
 from keras.layers import Embedding, Dropout, Dense, Flatten, Activation, Conv1D, MaxPooling1D
 
 warnings.simplefilter("ignore")
+filename = utils.os.path.basename(__file__)[:-3]
+logger = Logger(filename=filename)
 
 # =============== LOAD DATA =============== #
 url1 = 'https://github.com/GiladGecht/DepressionResearch/raw/master/Data/depression_lstm.csv'  # 200 samples
@@ -67,8 +71,8 @@ Depression_test  = depressed_neutral_copy[depressed_neutral_copy['user_name'].is
 Neutral_train = neutral_neutral_copy[neutral_neutral_copy['user_name'].isin(neutral_train)]['post_text']
 Neutral_test  = neutral_neutral_copy[neutral_neutral_copy['user_name'].isin(neutral_test)]['post_text']
 
-print("Depression train shape: {}, Depression test shape:{}".format(Depression_train.shape, Depression_test.shape))
-print("Neutral train shape: {}, Neutral test shape:{}".format(Neutral_train.shape, Neutral_test.shape))
+logger.log("Depression train shape: {}, Depression test shape:{}".format(Depression_train.shape, Depression_test.shape))
+logger.log("Neutral train shape: {}, Neutral test shape:{}".format(Neutral_train.shape, Neutral_test.shape))
 
 depressed_neutral_copy_cat = depressed_neutral_copy['post_text'].str.cat()
 neutral_neutral_copy_cat   = neutral_neutral_copy['post_text'].str.cat()
@@ -77,10 +81,10 @@ Depression_test            = Depression_test.str.cat()
 Neutral_train              = Neutral_train.str.cat()
 Neutral_test               = Neutral_test.str.cat()
 
-print("Neutral train text length: ", len(Neutral_train))
-print("Neutral test text length: ", len(Neutral_test))
-print("Depressed train text length: ", len(Depression_train))
-print("Depressed test text length: ", len(Depression_test))
+logger.log("Neutral train text length: ", len(Neutral_train))
+logger.log("Neutral test text length: ", len(Neutral_test))
+logger.log("Depressed train text length: ", len(Depression_train))
+logger.log("Depressed test text length: ", len(Depression_test))
 
 val_scores, acc_scores = [], []
 SEQUENCE_LENGTHS = [100]
@@ -122,7 +126,7 @@ for cv in range(CVS):
         tokenizer.fit_on_texts(Depression_train + Neutral_train)
         flag = 0
 
-    print("Performing Fold #{}".format(cv))
+    logger.log("Performing Fold #{}".format(cv))
     for seq_len in SEQUENCE_LENGTHS:
         preprocessing = Preprocessing(tokenizer, Neutral_train, Neutral_test, Neutral_val, Depression_train,
                                       Depression_test, Depression_val, seq_len)
@@ -190,7 +194,7 @@ for cv in range(CVS):
         score_val = model.evaluate(X_val, y_val, batch_size=BATCH_SIZE, verbose=True)
         val_scores.append(score_val[1])
         acc_scores.append(score[1])
-        print("It took {:.2f} Seconds, Test Accuracy with SEQUENCE LENGTH={}: {}, Validation Accuracy: {}".format(
+        logger.log("It took {:.2f} Seconds, Test Accuracy with SEQUENCE LENGTH={}: {}, Validation Accuracy: {}".format(
             time.time() - t1, seq_len, score[1], score_val[1]))
 
     acc = history.history['acc']
@@ -215,15 +219,15 @@ for cv in range(CVS):
     plt.savefig("Loss{}.png".format(cv))
     plt.legend()
 
-    print("-" * 30)
+    logger.log("-" * 30)
 # =============== EVALUATION METRICS =============== #
 
 y_pred = model.predict(X_test, batch_size=BATCH_SIZE)
 X_test_pred = np.column_stack((X_test, y_pred))
 y_pred_output = [1 if p >= 0.5 else 0 for p in y_pred]
-print(confusion_matrix(y_pred=y_pred_output, y_true=y_test))
-print(classification_report(y_true=y_test, y_pred=y_pred_output))
-print(model.summary())
+logger.log(confusion_matrix(y_pred=y_pred_output, y_true=y_test))
+logger.log(classification_report(y_true=y_test, y_pred=y_pred_output))
+logger.log(model.summary())
 
 acc      = history.history['acc']
 val_acc  = history.history['val_acc']

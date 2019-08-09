@@ -2,16 +2,19 @@ import re
 import pandas as pd
 import numpy as np
 import warnings
+import Create_Data.UtilFunctions as utils
 
-warnings.simplefilter("ignore")
 
 from pipelineHelperFunctions import *
 from sklearn.svm import LinearSVC
 from sklearn.utils import shuffle
+from Create_Data.Logging import Logger
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split,cross_val_score
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+
+warnings.simplefilter("ignore")
 
 
 def DataFilter(DF):
@@ -68,9 +71,9 @@ def Pipeline():
 
     neutral_subreddits, anxiety_subreddits = GetNeutralAndDepressionSubreddits(whole_data, subreddits)
 
-    print("The Filtered Neutral Subreddits Are:\n\n", neutral_subreddits)
-    print(20 * "-")
-    print("The Filtered Anxiety Subreddits are:\n\n", anxiety_subreddits)
+    logger.log("The Filtered Neutral Subreddits Are:\n\n", neutral_subreddits)
+    logger.log(20 * "-")
+    logger.log("The Filtered Anxiety Subreddits are:\n\n", anxiety_subreddits)
 
     anxiety_subreddit_filtered_list = ['Anxiety']
 
@@ -78,9 +81,9 @@ def Pipeline():
     depression_df = whole_data[whole_data['subreddit'].isin(anxiety_subreddit_filtered_list)]
     neutral_df = whole_data[whole_data['subreddit'].isin(neutral_subreddits)]
 
-    print("Anxiety group size:\n\n", depression_df.shape)
-    print(20 * "-")
-    print("neutral group size:\n\n", neutral_df.shape)
+    logger.log("Anxiety group size:\n\n", depression_df.shape)
+    logger.log(20 * "-")
+    logger.log("neutral group size:\n\n", neutral_df.shape)
 
     # Get the list of all unique users for each type of dataset
     depression_names = list(set(depression_df['user_name']))
@@ -95,7 +98,7 @@ def Pipeline():
     for i in depression_names:
         if i in neutral_names:
             both.append(i)
-    print("Amount of unique users who are in both groups: ", len(both))
+    logger.log("Amount of unique users who are in both groups: ", len(both))
 
     anxietyGroupSize = 0
     neutralGroupSize = 0
@@ -105,9 +108,9 @@ def Pipeline():
     for user in neutral_names:
         neutralGroupSize += whole_data[whole_data['user_name'] == user].shape[0]
 
-    print("Posts taken from anxious users: ", anxietyGroupSize)
-    print(20 * "-")
-    print("Posts taken from neutral users: ", neutralGroupSize)
+    logger.log("Posts taken from anxious users: ", anxietyGroupSize)
+    logger.log(20 * "-")
+    logger.log("Posts taken from neutral users: ", neutralGroupSize)
 
     full_df = full_df[full_df['user_name'].isin(both)]
     full_df = full_df.sort_values(by=['user_name', 'date_created'], ascending=False)
@@ -128,7 +131,7 @@ def Pipeline():
     # Take n largest subreddit by appreance in the filtered dataset
     n_largest = list(filtered_by_re['subreddit'].value_counts().nlargest(7).keys())
 
-    print(filtered_by_re['subreddit'].value_counts())
+    logger.log(filtered_by_re['subreddit'].value_counts())
 
     # Create the final depressed testing group to be compared with neutral people
     # by taking the depressed test group user id's, we can create the group's neutral posts
@@ -157,7 +160,7 @@ def Pipeline():
     non_depressed_people = non_depressed_people[non_depressed_people['predicted'] == 1]
     non_depressed_people = non_depressed_people[non_depressed_people['num_words_post'] > 50]
 
-    print(non_depressed_people.head())
+    logger.log(non_depressed_people.head())
 
     depression_group_users_neutral_posts = depression_group_users_neutral_posts.reset_index().drop('index', axis=1)
     neutral_total_subreddits = set(depression_group_users_neutral_posts['subreddit'].value_counts().keys())
@@ -168,12 +171,12 @@ def Pipeline():
         depression_group_users_neutral_posts['subreddit'].isin(filtered_neutral_subreddits)]
 
     # Print how many unique users we have for each group:
-    print("Number of Unique depressed posts users:", len(list(set(depressed_group_depressed_posts['user_name']))))
-    print("Number of Unique depressed neutral posts users:",
+    logger.log("Number of Unique depressed posts users:", len(list(set(depressed_group_depressed_posts['user_name']))))
+    logger.log("Number of Unique depressed neutral posts users:",
           len(list(set(depression_group_users_neutral_posts['user_name']))))
-    print("Number of Unique neutral posts users", len(list(set(non_depressed_people['user_name']))))
+    logger.log("Number of Unique neutral posts users", len(list(set(non_depressed_people['user_name']))))
 
-    print("Number of depression Neutral posts: ", depression_group_users_neutral_posts.shape)
+    logger.log("Number of depression Neutral posts: ", depression_group_users_neutral_posts.shape)
 
     depression_group_users_neutral_posts.to_csv('neutralPosts.csv')
 
