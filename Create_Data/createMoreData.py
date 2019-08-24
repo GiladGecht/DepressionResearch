@@ -20,19 +20,19 @@ while True:
     reddit = utils.connectToAPI()
 
     logger.log(message="Fetching new names...")
-    new_subreddit = utils.getNewSubreddit(reddit, 20)
+    new_subreddit = utils.getNewSubreddit(reddit, 1000)
     submissionDF = utils.loadData()
     init_num_samples = submissionDF.shape[0]
     logger.log(message="Loading...")
     logger.log(message="Current DataFrame Shape:{}".format(submissionDF.shape))
 
     unique_names = utils.getNames(submissionDF, new_subreddit)
-    logger.log(message="Number of new users:{}".format(len(unique_names)))
+    logger.log(message="Number of new users:{}".format(len(list(set(unique_names)))))
 
-    if len(unique_names) == 0:
+    if (len(unique_names) == 0) or unique_names == ['None']:
         # No new posts
         logger.log("Going to sleep")
-        time.sleep(60 * 20)
+        time.sleep(60 * 60 * 3)
         logger.log("Waking up")
         next
 
@@ -112,5 +112,5 @@ while True:
         topics_dict = utils.pd.concat([topics_dict, submissionDF], sort=False)
         topics_dict = topics_dict.fillna('')
 
-        topics_dict.to_csv('SubmissionsDF.csv', index=False)
+        topics_dict.to_csv(r'C:\Users\Gilad Gecht\PycharmProjects\DepressionResearch\Create_Data\SubmissionsDF.csv', index=False)
         logger.log(message="Indexed {} new samples".format(topics_dict.shape[0] - init_num_samples))

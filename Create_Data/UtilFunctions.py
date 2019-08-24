@@ -85,7 +85,7 @@ def getNames(submissions, new_subreddit):
         if curr_name not in list_of_names:
             unique_new_names.append(curr_name)  # works - clear
 
-    return unique_new_names
+    return list(set(unique_new_names))
 
 
 # Create new features and alter existing ones for better usage

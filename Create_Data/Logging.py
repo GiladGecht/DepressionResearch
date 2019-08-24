@@ -5,7 +5,13 @@ import sys
 
 
 class Logger:
+
     def __init__(self, filename):
+        """
+
+        :param filename: String
+         The name the log file will have
+        """
         self.filename = filename
         self.time = str(datetime.now()).split()[1].split(".")[0].replace(":", "_")
         self.date = str(datetime.now()).split()[0].replace("-", "_")
@@ -23,4 +29,10 @@ class Logger:
         self.logger.addHandler(self.console_handler)
 
     def log(self, message):
+        """
+
+        :param message: String
+         A message or output which will be written to the log file
+        :return:
+        """
         self.logger.info(" " + "{}".format(message))
